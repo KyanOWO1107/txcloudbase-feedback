@@ -1,0 +1,31 @@
+{
+  "name": "feedback-db",
+  "title": "用户反馈",
+  "schemas": [
+    {
+      "name": "username",
+      "title": "用户名",
+      "type": "String"
+    },
+    {
+      "name": "message",
+      "title": "反馈信息",
+      "type": "MultiLineString"
+    },
+    {
+      "name": "ip",
+      "title": "IP地址",
+      "type": "String"
+    },
+    {
+      "name": "uuid",
+      "title": "UUID",
+      "type": "String"
+    },
+    {
+      "name": "time",
+      "title": "反馈时间",
+      "type": "DateTime"
+    }
+  ]
+}
