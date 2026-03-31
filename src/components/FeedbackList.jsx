@@ -41,6 +41,11 @@ export function FeedbackList({
       minute: '2-digit'
     });
   };
+
+  // 获取反馈状态，默认为待处理
+  const getFeedbackStatus = feedback => {
+    return feedback.status || 'pending';
+  };
   const handleDelete = async feedbackId => {
     if (window.confirm('确定要删除这条反馈吗？')) {
       try {
@@ -109,10 +114,12 @@ export function FeedbackList({
       </div>
 
       <div className="space-y-4 max-h-[500px] overflow-y-auto">
-        {feedbacks.map(feedback => <div key={feedback._id} className={`border-3 border-black bg-[#F5F5F5] p-4 hover:border-[#00B4D8] transition-colors ${feedback.status === 'resolved' ? 'opacity-70' : ''}`}>
+        {feedbacks.map(feedback => {
+        const status = getFeedbackStatus(feedback);
+        return <div key={feedback._id} className={`border-3 border-black bg-[#F5F5F5] p-4 hover:border-[#00B4D8] transition-colors ${status === 'resolved' ? 'opacity-70' : ''}`}>
             <div className="flex items-start justify-between mb-3">
-              <div className={`inline-flex items-center px-3 py-1 text-sm font-bold font-[Space_Mono] ${feedback.status === 'resolved' ? 'bg-green-500 text-white' : 'bg-[#00B4D8] text-white'}`}>
-                {feedback.status === 'resolved' ? <>
+              <div className={`inline-flex items-center px-3 py-1 text-sm font-bold font-[Space_Mono] ${status === 'resolved' ? 'bg-green-500 text-white' : 'bg-[#00B4D8] text-white'}`}>
+                {status === 'resolved' ? <>
                     <CheckCircle2 className="mr-1" size={14} />
                     已解决
                   </> : <>
@@ -121,8 +128,8 @@ export function FeedbackList({
                   </>}
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => handleToggleStatus(feedback)} size="sm" className={`border-2 border-black font-bold font-[Space_Mono] text-sm ${feedback.status === 'resolved' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-[#00B4D8] hover:bg-[#0096C7]'} text-white`}>
-                  {feedback.status === 'resolved' ? '标记未解决' : '标记已解决'}
+                <Button onClick={() => handleToggleStatus(feedback)} size="sm" className={`border-2 border-black font-bold font-[Space_Mono] text-sm ${status === 'resolved' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-[#00B4D8] hover:bg-[#0096C7]'} text-white`}>
+                  {status === 'resolved' ? '标记未解决' : '标记已解决'}
                 </Button>
                 <Button onClick={() => handleDelete(feedback._id)} size="sm" variant="destructive" className="border-2 border-black font-bold font-[Space_Mono] text-sm">
                   <Trash2 className="w-4 h-4" />
@@ -177,7 +184,8 @@ export function FeedbackList({
                 </div>
               </div>
             </div>
-          </div>)}
+          </div>;
+      })}
       </div>
     </div>;
 }

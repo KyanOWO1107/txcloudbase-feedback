@@ -26,6 +26,16 @@
       "name": "time",
       "title": "反馈时间",
       "type": "DateTime"
+    },
+    {
+      "name": "status",
+      "title": "反馈状态",
+      "type": "String"
+    },
+    {
+      "name": "resolvedTime",
+      "title": "解决时间",
+      "type": "DateTime"
     }
   ]
 }

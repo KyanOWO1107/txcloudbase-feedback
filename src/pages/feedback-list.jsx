@@ -14,6 +14,31 @@ export default function FeedbackListPage(props) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // 修复缺少 status 字段的记录
+  const fixMissingStatus = async records => {
+    const tcb = await props.$w.cloud.getCloudInstance();
+    const db = tcb.database();
+    const collection = db.collection('feedback-db');
+    const updatePromises = [];
+    for (const record of records) {
+      if (!record.status) {
+        updatePromises.push(collection.doc(record._id).update({
+          status: 'pending',
+          resolvedTime: null
+        }));
+      }
+    }
+    if (updatePromises.length > 0) {
+      try {
+        await Promise.all(updatePromises);
+        return updatePromises.length;
+      } catch (error) {
+        console.error('修复数据失败:', error);
+      }
+    }
+    return 0;
+  };
+
   // 加载反馈列表
   const loadFeedbacks = async () => {
     setLoading(true);
@@ -23,7 +48,21 @@ export default function FeedbackListPage(props) {
       const db = tcb.database();
       const collection = db.collection('feedback-db');
       const result = await collection.orderBy('time', 'desc').limit(100).get();
-      setFeedbacks(result.data || []);
+      const feedbackData = result.data || [];
+
+      // 检查并修复缺少 status 字段的记录
+      const fixedCount = await fixMissingStatus(feedbackData);
+      if (fixedCount > 0) {
+        toast({
+          title: '数据已修复',
+          description: `已自动修复 ${fixedCount} 条记录的默认状态`
+        });
+        // 重新加载数据以确保最新状态
+        const updatedResult = await collection.orderBy('time', 'desc').limit(100).get();
+        setFeedbacks(updatedResult.data || []);
+      } else {
+        setFeedbacks(feedbackData);
+      }
     } catch (error) {
       toast({
         title: '加载失败',
@@ -54,7 +93,8 @@ export default function FeedbackListPage(props) {
       const tcb = await props.$w.cloud.getCloudInstance();
       const db = tcb.database();
       const collection = db.collection('feedback-db');
-      const newStatus = feedback.status === 'resolved' ? 'pending' : 'resolved';
+      const currentStatus = feedback.status || 'pending';
+      const newStatus = currentStatus === 'resolved' ? 'pending' : 'resolved';
       await collection.doc(feedback._id).update({
         status: newStatus,
         resolvedTime: newStatus === 'resolved' ? new Date() : null
@@ -77,7 +117,10 @@ export default function FeedbackListPage(props) {
       // 生成CSV文件
       const records = result.data || [];
       const headers = ['用户名', 'UUID', 'IP地址', '反馈内容', '提交时间', '状态'];
-      const csvContent = [headers.join(','), ...records.map(record => [record.username || '', record.uuid || '', record.ip || '', record.message || '', record.time || '', record.status === 'resolved' ? '已解决' : '待处理'].join(','))].join('\n');
+      const csvContent = [headers.join(','), ...records.map(record => {
+        const status = record.status || 'pending';
+        return [record.username || '', record.uuid || '', record.ip || '', record.message || '', record.time || '', status === 'resolved' ? '已解决' : '待处理'].join(',');
+      })].join('\n');
 
       // 创建Blob对象并下载
       const blob = new Blob([csvContent], {
