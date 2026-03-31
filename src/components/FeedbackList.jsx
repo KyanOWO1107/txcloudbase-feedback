@@ -49,18 +49,15 @@ export function FeedbackList({
   const handleDelete = async feedbackId => {
     if (window.confirm('确定要删除这条反馈吗？')) {
       try {
-        console.log('开始删除反馈:', feedbackId);
         await onDelete(feedbackId);
         toast({
           title: '删除成功',
           description: '反馈已删除'
         });
       } catch (error) {
-        console.error('删除反馈失败:', error);
-        const errorMessage = error.message || error.errMsg || JSON.stringify(error);
         toast({
           title: '删除失败',
-          description: errorMessage,
+          description: error.message || '请稍后重试',
           variant: 'destructive'
         });
       }
@@ -68,18 +65,15 @@ export function FeedbackList({
   };
   const handleToggleStatus = async feedback => {
     try {
-      console.log('开始切换状态:', feedback._id, feedback.status);
       await onToggleStatus(feedback);
       toast({
         title: '状态更新成功',
         description: '反馈状态已更新'
       });
     } catch (error) {
-      console.error('状态切换失败:', error);
-      const errorMessage = error.message || error.errMsg || JSON.stringify(error);
       toast({
         title: '状态更新失败',
-        description: errorMessage,
+        description: error.message || '请稍后重试',
         variant: 'destructive'
       });
     }
