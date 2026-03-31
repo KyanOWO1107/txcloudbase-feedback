@@ -66,16 +66,20 @@ export default function FeedbackSubmitPage(props) {
         message: data.message,
         ip: ip,
         uuid: uuid,
-        time: new Date()
+        time: new Date(),
+        status: 'pending',
+        resolvedTime: null
       });
       toast({
         title: '提交成功',
         description: '您的反馈已成功提交，感谢您的反馈！'
       });
     } catch (error) {
+      console.error('提交反馈失败:', error);
+      const errorMessage = error.message || error.errMsg || JSON.stringify(error);
       toast({
         title: '提交失败',
-        description: error.message || '请稍后重试',
+        description: errorMessage,
         variant: 'destructive'
       });
       throw error;

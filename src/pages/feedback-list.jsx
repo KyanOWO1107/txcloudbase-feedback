@@ -14,18 +14,23 @@ export default function FeedbackListPage(props) {
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 修复缺少 status 字段的记录
-  const fixMissingStatus = async records => {
+  // 修复缺少必要字段的记录
+  const fixMissingFields = async records => {
     const tcb = await props.$w.cloud.getCloudInstance();
     const db = tcb.database();
     const collection = db.collection('feedback-db');
     const updatePromises = [];
     for (const record of records) {
-      if (!record.status) {
-        updatePromises.push(collection.doc(record._id).update({
-          status: 'pending',
-          resolvedTime: null
-        }));
+      const needsUpdate = !record.status || !record.resolvedTime;
+      if (needsUpdate) {
+        const updateData = {};
+        if (!record.status) {
+          updateData.status = 'pending';
+        }
+        if (!record.resolvedTime) {
+          updateData.resolvedTime = null;
+        }
+        updatePromises.push(collection.doc(record._id).update(updateData));
       }
     }
     if (updatePromises.length > 0) {
@@ -50,12 +55,12 @@ export default function FeedbackListPage(props) {
       const result = await collection.orderBy('time', 'desc').limit(100).get();
       const feedbackData = result.data || [];
 
-      // 检查并修复缺少 status 字段的记录
-      const fixedCount = await fixMissingStatus(feedbackData);
+      // 检查并修复缺少必要字段的记录
+      const fixedCount = await fixMissingFields(feedbackData);
       if (fixedCount > 0) {
         toast({
           title: '数据已修复',
-          description: `已自动修复 ${fixedCount} 条记录的默认状态`
+          description: `已自动修复 ${fixedCount} 条记录的字段`
         });
         // 重新加载数据以确保最新状态
         const updatedResult = await collection.orderBy('time', 'desc').limit(100).get();
@@ -64,9 +69,11 @@ export default function FeedbackListPage(props) {
         setFeedbacks(feedbackData);
       }
     } catch (error) {
+      console.error('加载反馈列表失败:', error);
+      const errorMessage = error.message || error.errMsg || JSON.stringify(error);
       toast({
         title: '加载失败',
-        description: error.message || '无法加载反馈列表',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -77,12 +84,16 @@ export default function FeedbackListPage(props) {
   // 删除反馈
   const handleDeleteFeedback = async feedbackId => {
     try {
+      console.log('开始删除反馈:', feedbackId);
       const tcb = await props.$w.cloud.getCloudInstance();
       const db = tcb.database();
       const collection = db.collection('feedback-db');
+      console.log('执行删除操作...');
       await collection.doc(feedbackId).remove();
+      console.log('删除成功，重新加载数据...');
       await loadFeedbacks();
     } catch (error) {
+      console.error('删除反馈失败:', error);
       throw error;
     }
   };
@@ -90,17 +101,23 @@ export default function FeedbackListPage(props) {
   // 切换反馈状态（已解决/未解决）
   const handleToggleStatus = async feedback => {
     try {
+      console.log('开始切换反馈状态:', feedback._id, feedback.status);
       const tcb = await props.$w.cloud.getCloudInstance();
       const db = tcb.database();
       const collection = db.collection('feedback-db');
       const currentStatus = feedback.status || 'pending';
       const newStatus = currentStatus === 'resolved' ? 'pending' : 'resolved';
-      await collection.doc(feedback._id).update({
+      console.log('当前状态:', currentStatus, '-> 新状态:', newStatus);
+      const updateData = {
         status: newStatus,
         resolvedTime: newStatus === 'resolved' ? new Date() : null
-      });
+      };
+      console.log('更新数据:', updateData);
+      await collection.doc(feedback._id).update(updateData);
+      console.log('状态更新成功，重新加载数据...');
       await loadFeedbacks();
     } catch (error) {
+      console.error('切换状态失败:', error);
       throw error;
     }
   };
